@@ -7,6 +7,7 @@ import TaskFormModal from './components/TaskFormModal';
 import TaskHistoryModal from './components/TaskHistoryModal';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
 import MusicPlayer from './components/MusicPlayer';
+import Fireflies from './components/Fireflies';
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -405,6 +406,7 @@ function App() {
       )}
 
       <MusicPlayer />
+      <Fireflies />
     </div>
   );
 }
