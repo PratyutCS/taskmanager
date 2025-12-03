@@ -7,6 +7,8 @@ const TaskFormModal = ({ task, onClose, onSave }) => {
         estimatedTime: '',
         priority: 0,
         dueDate: '',
+        subtasks: [],
+        totalTimeSpent: 0,
     });
 
     useEffect(() => {
@@ -17,6 +19,8 @@ const TaskFormModal = ({ task, onClose, onSave }) => {
                 estimatedTime: task.estimatedTime || '',
                 priority: task.priority || 0,
                 dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+                subtasks: task.subtasks || [],
+                totalTimeSpent: task.totalTimeSpent || 0,
             });
         }
     }, [task]);
@@ -26,10 +30,32 @@ const TaskFormModal = ({ task, onClose, onSave }) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleSubtaskChange = (index, value) => {
+        const newSubtasks = [...formData.subtasks];
+        newSubtasks[index] = { ...newSubtasks[index], title: value };
+        setFormData(prev => ({ ...prev, subtasks: newSubtasks }));
+    };
+
+    const addSubtask = () => {
+        setFormData(prev => ({
+            ...prev,
+            subtasks: [...prev.subtasks, { title: '', completed: false }]
+        }));
+    };
+
+    const removeSubtask = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            subtasks: prev.subtasks.filter((_, i) => i !== index)
+        }));
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
+        const cleanedSubtasks = formData.subtasks.filter(st => st.title.trim() !== '');
         onSave({
             ...formData,
+            subtasks: cleanedSubtasks,
             _id: task?._id, // Include ID if editing
         });
     };
@@ -79,6 +105,17 @@ const TaskFormModal = ({ task, onClose, onSave }) => {
                             />
                         </div>
                         <div>
+                            <label className="block text-sm text-gray-400 mb-1">Total Time Spent (mins)</label>
+                            <input
+                                name="totalTimeSpent"
+                                type="number"
+                                min="0"
+                                value={formData.totalTimeSpent}
+                                onChange={handleChange}
+                                className="w-full bg-dark-bg border border-gray-700 rounded-lg p-3 text-white focus:border-neon-green focus:outline-none transition-colors"
+                            />
+                        </div>
+                        <div>
                             <label className="block text-sm text-gray-400 mb-1">Due Date</label>
                             <input
                                 name="dueDate"
@@ -102,6 +139,47 @@ const TaskFormModal = ({ task, onClose, onSave }) => {
                             className="w-full accent-neon-green"
                         />
                         <div className="text-right text-neon-green font-mono">{formData.priority}</div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-2">Subtasks</label>
+                        <div className="space-y-2 mb-2">
+                            {formData.subtasks.map((subtask, index) => (
+                                <div key={index} className="flex gap-2 items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={subtask.completed}
+                                        onChange={(e) => {
+                                            const newSubtasks = [...formData.subtasks];
+                                            newSubtasks[index].completed = e.target.checked;
+                                            setFormData(prev => ({ ...prev, subtasks: newSubtasks }));
+                                        }}
+                                        className="w-4 h-4 accent-neon-green bg-dark-bg border-gray-700 rounded"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={subtask.title}
+                                        onChange={(e) => handleSubtaskChange(index, e.target.value)}
+                                        placeholder="Subtask title"
+                                        className={`flex-1 bg-dark-bg border border-gray-700 rounded-lg p-2 text-sm text-white focus:border-neon-green focus:outline-none ${subtask.completed ? 'line-through text-gray-500' : ''}`}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeSubtask(index)}
+                                        className="text-red-400 hover:text-red-300 px-2"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={addSubtask}
+                            className="text-sm text-neon-blue hover:text-white transition-colors flex items-center gap-1"
+                        >
+                            + Add Subtask
+                        </button>
                     </div>
 
                     <div className="flex gap-3 mt-6">

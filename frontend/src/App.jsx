@@ -5,6 +5,7 @@ import CalendarView from './components/CalendarView';
 import WorkLogModal from './components/WorkLogModal';
 import TaskFormModal from './components/TaskFormModal';
 import TaskHistoryModal from './components/TaskHistoryModal';
+import DeleteConfirmationModal from './components/DeleteConfirmationModal';
 import MusicPlayer from './components/MusicPlayer';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
   const [activeTaskForLog, setActiveTaskForLog] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [historyTask, setHistoryTask] = useState(null);
+  const [taskToDelete, setTaskToDelete] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch initial tasks
@@ -166,6 +168,23 @@ function App() {
     }
   };
 
+  const handleResetTimer = async (task) => {
+    if (!window.confirm("Reset the current session timer to 0?")) return;
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:5000/api/tasks/${task._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ workingStartTime: Date.now() }),
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleSaveWorkLog = async (logData) => {
     try {
       const token = localStorage.getItem('token');
@@ -201,6 +220,7 @@ function App() {
         body: JSON.stringify({
           status: 'idle',
           progress: logData.progress,
+          subtasks: logData.subtasks,
         }),
       });
 
@@ -214,9 +234,10 @@ function App() {
   const handleSaveTask = async (taskData) => {
     const token = localStorage.getItem('token');
     try {
+      let res;
       if (taskData._id) {
         // Update
-        await fetch(`http://localhost:5000/api/tasks/${taskData._id}`, {
+        res = await fetch(`http://localhost:5000/api/tasks/${taskData._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -226,7 +247,7 @@ function App() {
         });
       } else {
         // Create
-        await fetch('http://localhost:5000/api/tasks', {
+        res = await fetch('http://localhost:5000/api/tasks', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -235,17 +256,26 @@ function App() {
           body: JSON.stringify(taskData),
         });
       }
+
+      if (!res.ok) {
+        const errData = await res.json();
+        alert(`Failed to save task: ${errData.msg || 'Unknown error'}`);
+        return;
+      }
+
       setShowTaskModal(false);
       setEditingTask(null);
     } catch (err) {
       console.error(err);
+      alert('Network error or server unreachable');
     }
   };
 
-  const handleDeleteTask = async (task) => {
-    if (!window.confirm(`Are you sure you want to delete "${task.title}"?`)) return;
+  const handleDeleteTask = (task) => {
+    setTaskToDelete(task);
+  };
 
-    const token = localStorage.getItem('token');
+  const confirmDeleteTask = async (task) => {
     try {
       await fetch(`http://localhost:5000/api/tasks/${task._id}`, {
         method: 'DELETE',
@@ -321,6 +351,7 @@ function App() {
             tasks={tasks}
             onTaskMove={handleTaskMove}
             onWorkToggle={handleWorkToggle}
+            onResetTimer={handleResetTimer}
             onTaskEdit={(task) => {
               setEditingTask(task);
               setShowTaskModal(true);
@@ -362,6 +393,14 @@ function App() {
             setShowHistoryModal(false);
             setHistoryTask(null);
           }}
+        />
+      )}
+
+      {taskToDelete && (
+        <DeleteConfirmationModal
+          task={taskToDelete}
+          onClose={() => setTaskToDelete(null)}
+          onConfirm={confirmDeleteTask}
         />
       )}
 

@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import TaskCard from './TaskCard';
 
-const TaskBoard = ({ tasks, onTaskMove, onTaskEdit, onTaskDelete, onWorkToggle, onTaskHistory }) => {
+const TaskBoard = ({ tasks, onTaskMove, onTaskEdit, onTaskDelete, onWorkToggle, onTaskHistory, onResetTimer }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterPriority, setFilterPriority] = useState('all'); // all, high, medium, low
     const [sortBy, setSortBy] = useState('order'); // order, priority, dueDate
@@ -129,6 +129,7 @@ const TaskBoard = ({ tasks, onTaskMove, onTaskEdit, onTaskDelete, onWorkToggle, 
                                     onEdit={onTaskEdit}
                                     onDelete={onTaskDelete}
                                     onWorkToggle={onWorkToggle}
+                                    onResetTimer={onResetTimer}
                                 />
                             ))}
                         </div>
@@ -151,11 +152,25 @@ const TaskBoard = ({ tasks, onTaskMove, onTaskEdit, onTaskDelete, onWorkToggle, 
                             onClick={() => onTaskHistory(task)}
                             className="p-3 rounded-lg bg-white/5 border border-white/5 opacity-75 hover:opacity-100 hover:border-neon-blue/50 cursor-pointer transition-all"
                         >
-                            <h4 className="font-medium text-gray-300 line-through">{task.title}</h4>
-                            <p className="text-xs text-gray-500 mt-1">
-                                Completed: {new Date(task.lastProgressUpdate).toLocaleDateString()}
-                            </p>
-                            <div className="mt-2 text-xs text-neon-blue">Click to view details</div>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h4 className="font-medium text-gray-300 line-through">{task.title}</h4>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Completed: {new Date(task.lastProgressUpdate).toLocaleDateString()}
+                                    </p>
+                                    <div className="mt-2 text-xs text-neon-blue">Click to view details</div>
+                                </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onTaskDelete(task);
+                                    }}
+                                    className="text-red-500/50 hover:text-red-500 p-1"
+                                    title="Delete Task"
+                                >
+                                    ✕
+                                </button>
+                            </div>
                         </div>
                     ))}
                     {finishedTasks.length === 0 && (

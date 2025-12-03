@@ -25,6 +25,7 @@ const createTask = async (req, res) => {
     dueDate,
     estimatedTime,
     priority,
+    subtasks,
   } = req.body;
 
   try {
@@ -34,6 +35,7 @@ const createTask = async (req, res) => {
       dueDate,
       estimatedTime,
       priority,
+      subtasks,
       user: req.user.id,
     });
 
@@ -62,6 +64,9 @@ const updateTask = async (req, res) => {
     priority,
     status,
     pinned,
+    subtasks,
+    workingStartTime,
+    totalTimeSpent,
   } = req.body;
 
   try {
@@ -77,42 +82,46 @@ const updateTask = async (req, res) => {
     }
 
     const updatePayload = {
-        title,
-        description,
-        dueDate,
-        estimatedTime,
-        progress,
-        priority,
-        status,
-        pinned,
-      };
-  
-      // Single 'working' task logic
-      if (status === 'working' && task.status !== 'working') {
-        await Task.updateMany(
-          { user: req.user.id, status: 'working' },
-          { $set: { status: 'idle' } }
-        );
-        updatePayload.workingStartTime = Date.now();
-      }
-  
-      // Finished task logic
-      if (progress === 100) {
-        if (task.status === 'working') {
-          const workLogCount = await WorkLog.countDocuments({
-            task: task._id,
-            createdDate: { $gte: task.workingStartTime || task.createdDate },
-          });
-          if (workLogCount === 0) {
-            return res.status(400).json({ msg: 'Cannot finish a task without at least one work log entry since it was set to working.' });
-          }
+      title,
+      description,
+      dueDate,
+      estimatedTime,
+      progress,
+      priority,
+      status,
+      pinned,
+      subtasks,
+    };
+
+    if (workingStartTime !== undefined) updatePayload.workingStartTime = workingStartTime;
+    if (totalTimeSpent !== undefined) updatePayload.totalTimeSpent = totalTimeSpent;
+
+    // Single 'working' task logic
+    if (status === 'working' && task.status !== 'working') {
+      await Task.updateMany(
+        { user: req.user.id, status: 'working' },
+        { $set: { status: 'idle' } }
+      );
+      updatePayload.workingStartTime = Date.now();
+    }
+
+    // Finished task logic
+    if (progress === 100) {
+      if (task.status === 'working') {
+        const workLogCount = await WorkLog.countDocuments({
+          task: task._id,
+          createdDate: { $gte: task.workingStartTime || task.createdDate },
+        });
+        if (workLogCount === 0) {
+          return res.status(400).json({ msg: 'Cannot finish a task without at least one work log entry since it was set to working.' });
         }
-        updatePayload.status = 'finished';
       }
-    
+      updatePayload.status = 'finished';
+    }
+
     // Update progress timestamp
     if (progress && task.progress !== progress) {
-        updatePayload.lastProgressUpdate = Date.now();
+      updatePayload.lastProgressUpdate = Date.now();
     }
 
     task = await Task.findByIdAndUpdate(
@@ -161,27 +170,27 @@ const deleteTask = async (req, res) => {
 // @route   PUT /api/tasks/order
 // @access  Private
 const updateTaskOrder = async (req, res) => {
-    const { orderedTasks } = req.body; // Expecting an array of { _id, order }
-  
-    try {
-      const bulkOps = orderedTasks.map(task => ({
-        updateOne: {
-          filter: { _id: task._id, user: req.user.id },
-          update: { $set: { order: task.order } },
-        },
-      }));
-  
-      const result = await Task.bulkWrite(bulkOps);
+  const { orderedTasks } = req.body; // Expecting an array of { _id, order }
 
-      req.io.emit('taskOrderUpdated', { orderedTasks });
+  try {
+    const bulkOps = orderedTasks.map(task => ({
+      updateOne: {
+        filter: { _id: task._id, user: req.user.id },
+        update: { $set: { order: task.order } },
+      },
+    }));
 
-      res.json({ msg: 'Task order updated successfully', modifiedCount: result.modifiedCount });
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
-    }
-  };
-  
+    const result = await Task.bulkWrite(bulkOps);
+
+    req.io.emit('taskOrderUpdated', { orderedTasks });
+
+    res.json({ msg: 'Task order updated successfully', modifiedCount: result.modifiedCount });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
 
 module.exports = {
   getTasks,

@@ -20,23 +20,27 @@ const createWorkLog = async (req, res) => {
       return res.status(401).json({ msg: 'Not authorized' });
     }
 
-    const newWorkLog = new WorkLog({
+    // Create work log
+    const workLog = new WorkLog({
       task: taskId,
-      user: req.user.id,
+      user: req.user._id,
       startTime,
       endTime,
       timeSpent,
-      notes,
+      notes
     });
 
-    const workLog = await newWorkLog.save();
-    
-    // Potentially update task progress or other fields here
-    // For now, we'll just log the work
+    const savedWorkLog = await workLog.save();
 
-    req.io.emit('workLogCreated', workLog);
+    // Update task total time
+    task.totalTimeSpent = (task.totalTimeSpent || 0) + timeSpent;
+    await task.save();
 
-    res.json(workLog);
+    // Emit event
+    req.io.emit('workLogCreated', savedWorkLog);
+    req.io.emit('taskUpdated', task);
+
+    res.status(201).json(savedWorkLog);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
@@ -55,10 +59,10 @@ const getWorkLogsForTask = async (req, res) => {
     if (!task) {
       return res.status(404).json({ msg: 'Task not found' });
     }
-    
+
     // Check user
     if (task.user.toString() !== req.user.id) {
-        return res.status(401).json({ msg: 'Not authorized' });
+      return res.status(401).json({ msg: 'Not authorized' });
     }
 
     const workLogs = await WorkLog.find({ task: taskId }).sort({ createdDate: -1 });

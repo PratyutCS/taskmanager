@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
 
 const WorkLogModal = ({ task, onClose, onSave }) => {
-  const [timeSpent, setTimeSpent] = useState('');
+  const [timeSpent, setTimeSpent] = useState(() => {
+    if (task.status === 'working' && task.workingStartTime) {
+      const start = new Date(task.workingStartTime).getTime();
+      const now = Date.now();
+      const diffMins = Math.ceil((now - start) / 60000);
+      return diffMins > 0 ? diffMins.toString() : '1';
+    }
+    return '';
+  });
   const [notes, setNotes] = useState('');
   const [progress, setProgress] = useState(task.progress);
+  const [subtasks, setSubtasks] = useState(task.subtasks || []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -12,6 +21,7 @@ const WorkLogModal = ({ task, onClose, onSave }) => {
       timeSpent: parseInt(timeSpent),
       notes,
       progress: parseInt(progress),
+      subtasks,
     });
   };
 
@@ -57,6 +67,31 @@ const WorkLogModal = ({ task, onClose, onSave }) => {
             />
           </div>
 
+          {subtasks.length > 0 && (
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Update Subtasks</label>
+              <div className="space-y-2 bg-black/20 p-3 rounded-lg border border-white/5">
+                {subtasks.map((subtask, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={subtask.completed}
+                      onChange={(e) => {
+                        const newSubtasks = [...subtasks];
+                        newSubtasks[index] = { ...newSubtasks[index], completed: e.target.checked };
+                        setSubtasks(newSubtasks);
+                      }}
+                      className="w-4 h-4 accent-neon-green bg-dark-bg border-gray-700 rounded"
+                    />
+                    <span className={`text-sm ${subtask.completed ? 'text-gray-500 line-through' : 'text-gray-200'}`}>
+                      {subtask.title}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3 mt-6">
             <button
               type="button"
@@ -74,15 +109,21 @@ const WorkLogModal = ({ task, onClose, onSave }) => {
             <button
               type="button"
               onClick={(e) => {
-                setProgress(100);
-                // We need to submit the form, but state update might not be immediate for the submit handler if we just called setProgress.
-                // So we call onSave directly with 100.
                 e.preventDefault();
+
+                // Check if all subtasks are completed
+                if (subtasks.some(st => !st.completed)) {
+                  alert("You must complete all subtasks before finishing the task!");
+                  return;
+                }
+
+                setProgress(100);
                 onSave({
                   taskId: task._id,
-                  timeSpent: parseInt(timeSpent) || 0, // Default to 0 if empty, or validate? Requirement says "add time/work entries".
+                  timeSpent: parseInt(timeSpent) || 0,
                   notes,
                   progress: 100,
+                  subtasks,
                 });
               }}
               className="flex-1 py-3 rounded-lg bg-neon-blue text-dark-bg font-bold hover:bg-cyan-400 transition-colors shadow-[0_0_15px_rgba(0,243,255,0.3)]"

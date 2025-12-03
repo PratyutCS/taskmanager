@@ -6,17 +6,36 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 const localizer = momentLocalizer(moment);
 
 const CalendarView = ({ tasks }) => {
-    // Filter out finished tasks as requested
-    const activeTasks = tasks.filter(task => task.status !== 'finished');
+    const [viewMode, setViewMode] = React.useState('pending'); // 'pending' or 'finished'
 
-    const events = activeTasks.map(task => ({
-        id: task._id,
-        title: task.title,
-        start: new Date(task.createdDate),
-        end: new Date(task.dueDate || task.createdDate), // Use due date or created date for end
-        allDay: true,
-        resource: task,
-    }));
+    const events = tasks
+        .filter(task => {
+            if (viewMode === 'pending') return task.status !== 'finished' && task.createdDate;
+            if (viewMode === 'finished') return task.status === 'finished' && task.lastProgressUpdate;
+            return false;
+        })
+        .map(task => {
+            let start, end;
+
+            if (viewMode === 'pending') {
+                start = new Date(task.createdDate);
+                end = new Date(task.dueDate || task.createdDate);
+                if (end < start) end = start;
+            } else {
+                // Finished mode: Show on the day it was finished
+                start = new Date(task.lastProgressUpdate);
+                end = new Date(task.lastProgressUpdate);
+            }
+
+            return {
+                id: task._id,
+                title: task.title,
+                start,
+                end,
+                allDay: true,
+                resource: task,
+            };
+        });
 
     const eventStyleGetter = (event) => {
         const isFinished = event.resource.status === 'finished';
@@ -47,18 +66,35 @@ const CalendarView = ({ tasks }) => {
     };
 
     return (
-        <div className="h-[600px] p-4 glass-panel rounded-2xl">
-            <Calendar
-                localizer={localizer}
-                events={events}
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: '100%' }}
-                eventPropGetter={eventStyleGetter}
-                views={['month', 'week', 'day']}
-                defaultView="month"
-                className="text-gray-300"
-            />
+        <div className="h-[600px] p-4 glass-panel rounded-2xl flex flex-col">
+            <div className="flex justify-end mb-4 gap-2">
+                <button
+                    onClick={() => setViewMode('pending')}
+                    className={`px-3 py-1 rounded-lg text-sm transition-colors ${viewMode === 'pending' ? 'bg-neon-green text-dark-bg font-bold' : 'text-gray-400 hover:text-white border border-gray-700'}`}
+                >
+                    Pending Tasks
+                </button>
+                <button
+                    onClick={() => setViewMode('finished')}
+                    className={`px-3 py-1 rounded-lg text-sm transition-colors ${viewMode === 'finished' ? 'bg-neon-blue text-dark-bg font-bold' : 'text-gray-400 hover:text-white border border-gray-700'}`}
+                >
+                    Finished Tasks
+                </button>
+            </div>
+
+            <div className="flex-1">
+                <Calendar
+                    localizer={localizer}
+                    events={events}
+                    startAccessor="start"
+                    endAccessor="end"
+                    style={{ height: '100%' }}
+                    eventPropGetter={eventStyleGetter}
+                    views={['month', 'week', 'day']}
+                    defaultView="month"
+                    className="text-gray-300"
+                />
+            </div>
         </div>
     );
 };

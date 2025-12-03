@@ -2,7 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const TaskCard = ({ task, onEdit, onDelete, onWorkToggle }) => {
+const TaskCard = ({ task, onEdit, onDelete, onWorkToggle, onResetTimer }) => {
   const {
     attributes,
     listeners,
@@ -20,6 +20,35 @@ const TaskCard = ({ task, onEdit, onDelete, onWorkToggle }) => {
 
   const isWorking = task.status === 'working';
   const isFinished = task.status === 'finished';
+
+  const [elapsedTime, setElapsedTime] = React.useState(0);
+
+  React.useEffect(() => {
+    let interval;
+    if (isWorking && task.workingStartTime) {
+      const startTime = new Date(task.workingStartTime).getTime();
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000)); // Initial set
+
+      interval = setInterval(() => {
+        const now = Date.now();
+        const seconds = Math.floor((now - startTime) / 1000);
+        setElapsedTime(seconds);
+      }, 1000);
+    } else {
+      setElapsedTime(0);
+    }
+    return () => clearInterval(interval);
+  }, [isWorking, task.workingStartTime]);
+
+  const formatTime = (seconds) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    return `${m}m ${s}s`;
+  };
+
+  const totalMinutes = task.totalTimeSpent || 0;
 
   return (
     <div
@@ -48,6 +77,30 @@ const TaskCard = ({ task, onEdit, onDelete, onWorkToggle }) => {
         <p className="text-sm text-gray-400 mb-3 line-clamp-2">
           {task.description}
         </p>
+
+        {/* Total Time */}
+        <div className="flex gap-4 text-xs text-gray-500 mb-2">
+          <span className="flex items-center gap-1">
+            <span className="text-neon-green">⏱</span>
+            {totalMinutes}m Total
+          </span>
+        </div>
+
+        {/* Subtasks List */}
+        {task.subtasks && task.subtasks.length > 0 && (
+          <div className="mb-3 bg-black/20 rounded-lg p-2 space-y-1 border border-white/5">
+            {task.subtasks.map((subtask, index) => (
+              <div key={index} className="flex items-start gap-2 text-xs">
+                <span className={`mt-0.5 ${subtask.completed ? "text-neon-blue" : "text-gray-600"}`}>
+                  {subtask.completed ? "☑" : "☐"}
+                </span>
+                <span className={`text-gray-300 break-all ${subtask.completed ? "line-through opacity-50" : ""}`}>
+                  {subtask.title}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Progress Bar */}
@@ -72,16 +125,32 @@ const TaskCard = ({ task, onEdit, onDelete, onWorkToggle }) => {
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {isWorking && (
+            <span className="text-neon-green font-mono font-bold animate-pulse mr-2">
+              {formatTime(elapsedTime)}
+            </span>
+          )}
+
+          {isWorking && (
+            <button
+              onClick={() => onResetTimer(task)}
+              className="text-gray-500 hover:text-white mr-2"
+              title="Reset Timer"
+            >
+              ↺
+            </button>
+          )}
+
           {!isFinished && (
             <button
               onClick={() => onWorkToggle(task)}
               className={`px-3 py-1 rounded-md transition-colors ${isWorking
-                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse'
+                ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
                 : 'bg-neon-green/10 text-neon-green hover:bg-neon-green/20'
                 }`}
             >
-              {isWorking ? 'Stop' : 'Start'}
+              {isWorking ? 'Pause' : 'Start'}
             </button>
           )}
           <button
@@ -98,7 +167,7 @@ const TaskCard = ({ task, onEdit, onDelete, onWorkToggle }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

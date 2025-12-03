@@ -56,6 +56,15 @@ const taskSchema = new mongoose.Schema({
   },
   workingStartTime: {
     type: Date,
+    default: null
+  },
+  subtasks: [{
+    title: { type: String, required: true },
+    completed: { type: Boolean, default: false }
+  }],
+  totalTimeSpent: {
+    type: Number,
+    default: 0
   }
 });
 
