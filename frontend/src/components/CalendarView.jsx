@@ -58,33 +58,7 @@ const CalendarView = ({ tasks }) => {
         );
     };
 
-    const eventStyleGetter = (event) => {
-        const isFinished = event.resource.status === 'finished';
-        const isWorking = event.resource.status === 'working';
 
-        let backgroundColor = '#1a2620';
-        let borderColor = '#374151';
-
-        if (isFinished) {
-            backgroundColor = '#1e3a8a'; // Dark blue
-            borderColor = '#00f3ff';
-        } else if (isWorking) {
-            backgroundColor = '#064e3b'; // Dark green
-            borderColor = '#00ff9d';
-        }
-
-        return {
-            style: {
-                backgroundColor,
-                borderColor,
-                color: '#e0e0e0',
-                borderWidth: '1px',
-                borderStyle: 'solid',
-                borderRadius: '4px',
-                fontSize: '0.8rem',
-            }
-        };
-    };
 
     const [date, setDate] = React.useState(new Date());
     const [view, setView] = React.useState('day');

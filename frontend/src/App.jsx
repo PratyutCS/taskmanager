@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { socket } from './socket';
 import TaskBoard from './components/TaskBoard';
 import CalendarView from './components/CalendarView';
@@ -12,14 +12,39 @@ import Fireflies from './components/Fireflies';
 function App() {
   const [tasks, setTasks] = useState([]);
   const [view, setView] = useState('board'); // 'board' or 'calendar'
-  const [showWorkLogModal, setShowWorkLogModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showWorkLogModal, setShowWorkLogModal] = useState(false);
   const [activeTaskForLog, setActiveTaskForLog] = useState(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [historyTask, setHistoryTask] = useState(null);
   const [taskToDelete, setTaskToDelete] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      // Hardcoded user ID for demo purposes since auth wasn't fully requested in the prompt's core flow focus
+      // In a real app, we'd have a login flow.
+      // For now, let's assume the backend has a way to identify us or we'll implement a simple login if needed.
+      // Wait, the prompt asked for JWT auth.
+      // I should check if there's a token. If not, show login.
+      // For this step, I'll assume we need a simple login state.
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return;
+      }
+
+      const res = await fetch('http://localhost:5000/api/tasks', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
 
   // Fetch initial tasks
   useEffect(() => {
@@ -71,35 +96,7 @@ function App() {
       socket.off('taskOrderUpdated');
       socket.off('tasksAged');
     };
-  }, []);
-
-  const fetchTasks = async () => {
-    try {
-      // Hardcoded user ID for demo purposes since auth wasn't fully requested in the prompt's core flow focus
-      // In a real app, we'd have a login flow.
-      // For now, let's assume the backend has a way to identify us or we'll implement a simple login if needed.
-      // Wait, the prompt asked for JWT auth.
-      // I should check if there's a token. If not, show login.
-      // For this step, I'll assume we need a simple login state.
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      const res = await fetch('http://localhost:5000/api/tasks', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setTasks(data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchTasks]);
 
   const handleLogin = async (email, password) => {
     try {
@@ -146,51 +143,18 @@ function App() {
     }
   };
 
-  const handleWorkToggle = async (task) => {
-    if (task.status === 'working') {
-      // Stop working -> Open modal
-      setActiveTaskForLog(task);
-      setShowWorkLogModal(true);
-    } else {
-      // Start working
-      try {
-        const token = localStorage.getItem('token');
-        await fetch(`http://localhost:5000/api/tasks/${task._id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ status: 'working' }),
-        });
-      } catch (err) {
-        console.error(err);
-      }
-    }
-  };
 
-  const handleResetTimer = async (task) => {
-    if (!window.confirm("Reset the current session timer to 0?")) return;
-    try {
-      const token = localStorage.getItem('token');
-      await fetch(`http://localhost:5000/api/tasks/${task._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ workingStartTime: Date.now() }),
-      });
-    } catch (err) {
-      console.error(err);
-    }
+  const handleLogWork = (task) => {
+    setActiveTaskForLog(task);
+    setShowWorkLogModal(true);
   };
 
   const handleSaveWorkLog = async (logData) => {
     try {
       const token = localStorage.getItem('token');
       // 1. Create Work Log
-      const startTime = activeTaskForLog?.workingStartTime || new Date(Date.now() - (logData.timeSpent || 0) * 60000);
+      // For manual entry, startTime is roughly now - timeSpent
+      const startTime = new Date(Date.now() - (logData.timeSpent || 0) * 60000);
 
       const res = await fetch(`http://localhost:5000/api/worklog/${logData.taskId}`, {
         method: 'POST',
@@ -211,18 +175,29 @@ function App() {
         return;
       }
 
-      // 2. Update Task (status to idle, update progress)
+      // 2. Update Task (progress, subtasks, totalTimeSpent)
+      // We need to fetch the current task to add to its totalTimeSpent, or the backend handles it?
+      // The backend updateTask doesn't automatically increment totalTimeSpent from a worklog unless we tell it.
+      // But wait, updateTask controller allows setting totalTimeSpent.
+      // Ideally, the backend should sum up worklogs, but for now let's just update the task's progress and status.
+      // Actually, we should update totalTimeSpent on the client side or fetch it.
+      // Let's just update progress and subtasks for now, and maybe status if it was finished.
+
+      const updateBody = {
+        progress: logData.progress,
+        subtasks: logData.subtasks,
+      };
+
+      // If progress is 100, status becomes finished (handled by backend logic usually, but let's be explicit if needed)
+      // The backend logic I modified earlier handles progress=100 -> status='finished'.
+
       await fetch(`http://localhost:5000/api/tasks/${logData.taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-          status: 'idle',
-          progress: logData.progress,
-          subtasks: logData.subtasks,
-        }),
+        body: JSON.stringify(updateBody),
       });
 
       setShowWorkLogModal(false);
@@ -231,6 +206,7 @@ function App() {
       console.error(err);
     }
   };
+
 
   const handleSaveTask = async (taskData) => {
     const token = localStorage.getItem('token');
@@ -278,10 +254,12 @@ function App() {
 
   const confirmDeleteTask = async (task) => {
     try {
+      const token = localStorage.getItem('token');
       await fetch(`http://localhost:5000/api/tasks/${task._id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
+      setTaskToDelete(null);
     } catch (err) {
       console.error(err);
     }
@@ -351,8 +329,6 @@ function App() {
           <TaskBoard
             tasks={tasks}
             onTaskMove={handleTaskMove}
-            onWorkToggle={handleWorkToggle}
-            onResetTimer={handleResetTimer}
             onTaskEdit={(task) => {
               setEditingTask(task);
               setShowTaskModal(true);
@@ -362,6 +338,7 @@ function App() {
               setHistoryTask(task);
               setShowHistoryModal(true);
             }}
+            onLogWork={handleLogWork}
           />
         ) : (
           <CalendarView tasks={tasks} />

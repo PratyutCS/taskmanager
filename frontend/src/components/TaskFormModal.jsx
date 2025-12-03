@@ -1,29 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const TaskFormModal = ({ task, onClose, onSave }) => {
     const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        estimatedTime: '',
-        priority: 0,
-        dueDate: '',
-        subtasks: [],
-        totalTimeSpent: 0,
+        title: task?.title || '',
+        description: task?.description || '',
+        estimatedTime: task?.estimatedTime || '',
+        priority: task?.priority || 0,
+        dueDate: task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+        subtasks: task?.subtasks || [],
+        totalTimeSpent: task?.totalTimeSpent || 0,
     });
-
-    useEffect(() => {
-        if (task) {
-            setFormData({
-                title: task.title,
-                description: task.description || '',
-                estimatedTime: task.estimatedTime || '',
-                priority: task.priority || 0,
-                dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
-                subtasks: task.subtasks || [],
-                totalTimeSpent: task.totalTimeSpent || 0,
-            });
-        }
-    }, [task]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;

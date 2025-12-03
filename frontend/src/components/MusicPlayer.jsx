@@ -41,6 +41,23 @@ const MusicPlayer = () => {
 
     const audioRef = useRef(new Audio(PLAYLIST[0].url));
 
+    const handleNext = () => {
+        setCurrentTrackIndex((prev) => (prev + 1) % PLAYLIST.length);
+    };
+
+    const handlePrev = () => {
+        setCurrentTrackIndex((prev) => (prev - 1 + PLAYLIST.length) % PLAYLIST.length);
+    };
+
+    const togglePlay = () => {
+        if (isPlaying) {
+            audioRef.current.pause();
+        } else {
+            audioRef.current.play().catch(e => console.error("Audio play failed", e));
+        }
+        setIsPlaying(!isPlaying);
+    };
+
     useEffect(() => {
         audioRef.current.volume = volume;
 
@@ -65,23 +82,6 @@ const MusicPlayer = () => {
     useEffect(() => {
         audioRef.current.volume = volume;
     }, [volume]);
-
-    const togglePlay = () => {
-        if (isPlaying) {
-            audioRef.current.pause();
-        } else {
-            audioRef.current.play().catch(e => console.error("Audio play failed", e));
-        }
-        setIsPlaying(!isPlaying);
-    };
-
-    const handleNext = () => {
-        setCurrentTrackIndex((prev) => (prev + 1) % PLAYLIST.length);
-    };
-
-    const handlePrev = () => {
-        setCurrentTrackIndex((prev) => (prev - 1 + PLAYLIST.length) % PLAYLIST.length);
-    };
 
     if (isMinimized) {
         return (

@@ -1,13 +1,13 @@
 import React from 'react';
 
 const TaskModal = ({ isOpen, onClose, onSave, task }) => {
-  if (!isOpen) return null;
-
   const [title, setTitle] = React.useState(task ? task.title : '');
   const [description, setDescription] = React.useState(task ? task.description : '');
   const [dueDate, setDueDate] = React.useState(task ? task.dueDate : '');
   const [estimatedTime, setEstimatedTime] = React.useState(task ? task.estimatedTime : '');
   const [priority, setPriority] = React.useState(task ? task.priority : 50);
+
+  if (!isOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -36,20 +36,20 @@ const TaskModal = ({ isOpen, onClose, onSave, task }) => {
               className="w-full bg-gray-800 text-primary-text p-3 rounded-lg border-2 border-gray-700 focus:border-neon-emerald focus:outline-none h-24"
             />
             <div className="grid grid-cols-2 gap-4">
-                <input
-                    type="date"
-                    placeholder="Due Date"
-                    value={dueDate ? new Date(dueDate).toISOString().split('T')[0] : ''}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full bg-gray-800 text-primary-text p-3 rounded-lg border-2 border-gray-700 focus:border-neon-emerald focus:outline-none"
-                />
-                <input
-                    type="number"
-                    placeholder="Est. Time (mins)"
-                    value={estimatedTime}
-                    onChange={(e) => setEstimatedTime(e.target.value)}
-                    className="w-full bg-gray-800 text-primary-text p-3 rounded-lg border-2 border-gray-700 focus:border-neon-emerald focus:outline-none"
-                />
+              <input
+                type="date"
+                placeholder="Due Date"
+                value={dueDate ? new Date(dueDate).toISOString().split('T')[0] : ''}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full bg-gray-800 text-primary-text p-3 rounded-lg border-2 border-gray-700 focus:border-neon-emerald focus:outline-none"
+              />
+              <input
+                type="number"
+                placeholder="Est. Time (mins)"
+                value={estimatedTime}
+                onChange={(e) => setEstimatedTime(e.target.value)}
+                className="w-full bg-gray-800 text-primary-text p-3 rounded-lg border-2 border-gray-700 focus:border-neon-emerald focus:outline-none"
+              />
             </div>
             <div>
               <label className="block text-secondary-text mb-2">Priority: {priority}</label>

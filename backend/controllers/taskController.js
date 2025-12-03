@@ -96,26 +96,8 @@ const updateTask = async (req, res) => {
     if (workingStartTime !== undefined) updatePayload.workingStartTime = workingStartTime;
     if (totalTimeSpent !== undefined) updatePayload.totalTimeSpent = totalTimeSpent;
 
-    // Single 'working' task logic
-    if (status === 'working' && task.status !== 'working') {
-      await Task.updateMany(
-        { user: req.user.id, status: 'working' },
-        { $set: { status: 'idle' } }
-      );
-      updatePayload.workingStartTime = Date.now();
-    }
-
     // Finished task logic
     if (progress === 100) {
-      if (task.status === 'working') {
-        const workLogCount = await WorkLog.countDocuments({
-          task: task._id,
-          createdDate: { $gte: task.workingStartTime || task.createdDate },
-        });
-        if (workLogCount === 0) {
-          return res.status(400).json({ msg: 'Cannot finish a task without at least one work log entry since it was set to working.' });
-        }
-      }
       updatePayload.status = 'finished';
     }
 

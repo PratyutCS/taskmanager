@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import TaskCard from './TaskCard';
 
-const TaskBoard = ({ tasks, onTaskMove, onTaskEdit, onTaskDelete, onWorkToggle, onTaskHistory, onResetTimer }) => {
+const TaskBoard = ({ tasks, onTaskMove, onTaskEdit, onTaskDelete, onTaskHistory, onLogWork }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterPriority, setFilterPriority] = useState('all'); // all, high, medium, low
     const [sortBy, setSortBy] = useState('order'); // order, priority, dueDate
@@ -128,8 +128,7 @@ const TaskBoard = ({ tasks, onTaskMove, onTaskEdit, onTaskDelete, onWorkToggle, 
                                     task={task}
                                     onEdit={onTaskEdit}
                                     onDelete={onTaskDelete}
-                                    onWorkToggle={onWorkToggle}
-                                    onResetTimer={onResetTimer}
+                                    onLogWork={onLogWork}
                                 />
                             ))}
                         </div>

@@ -1,27 +1,19 @@
 import React, { useState } from 'react';
 
 const WorkLogModal = ({ task, onClose, onSave }) => {
-  const [timeSpent, setTimeSpent] = useState(() => {
-    if (task.status === 'working' && task.workingStartTime) {
-      const start = new Date(task.workingStartTime).getTime();
-      const now = Date.now();
-      const diffMins = Math.ceil((now - start) / 60000);
-      return diffMins > 0 ? diffMins.toString() : '1';
-    }
-    return '';
-  });
+  const [progress, setProgress] = useState(task.progress || 0);
   const [notes, setNotes] = useState('');
-  const [progress, setProgress] = useState(task.progress);
+  const [timeSpent, setTimeSpent] = useState(0); // Manual time entry in minutes
   const [subtasks, setSubtasks] = useState(task.subtasks || []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave({
       taskId: task._id,
-      timeSpent: parseInt(timeSpent),
+      progress,
       notes,
-      progress: parseInt(progress),
-      subtasks,
+      timeSpent: parseInt(timeSpent, 10), // Ensure integer
+      subtasks
     });
   };
 
@@ -45,16 +37,15 @@ const WorkLogModal = ({ task, onClose, onSave }) => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Progress (%)</label>
+            <label className="block text-sm text-gray-400 mb-1">Progress ({progress}%)</label>
             <input
               type="range"
               min="0"
               max="100"
               value={progress}
-              onChange={(e) => setProgress(e.target.value)}
-              className="w-full accent-neon-green"
+              onChange={(e) => setProgress(parseInt(e.target.value))}
+              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-neon-green"
             />
-            <div className="text-right text-neon-green font-mono">{progress}%</div>
           </div>
 
           <div>
@@ -117,7 +108,8 @@ const WorkLogModal = ({ task, onClose, onSave }) => {
                   return;
                 }
 
-                setProgress(100);
+                // We need to call onSave with progress 100.
+                // Note: We use the current state values.
                 onSave({
                   taskId: task._id,
                   timeSpent: parseInt(timeSpent) || 0,

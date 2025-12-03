@@ -2,7 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const TaskCard = ({ task, onEdit, onDelete, onWorkToggle, onResetTimer }) => {
+const TaskCard = ({ task, onEdit, onDelete, onLogWork }) => {
   const {
     attributes,
     listeners,
@@ -18,35 +18,7 @@ const TaskCard = ({ task, onEdit, onDelete, onWorkToggle, onResetTimer }) => {
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const isWorking = task.status === 'working';
   const isFinished = task.status === 'finished';
-
-  const [elapsedTime, setElapsedTime] = React.useState(0);
-
-  React.useEffect(() => {
-    let interval;
-    if (isWorking && task.workingStartTime) {
-      const startTime = new Date(task.workingStartTime).getTime();
-      setElapsedTime(Math.floor((Date.now() - startTime) / 1000)); // Initial set
-
-      interval = setInterval(() => {
-        const now = Date.now();
-        const seconds = Math.floor((now - startTime) / 1000);
-        setElapsedTime(seconds);
-      }, 1000);
-    } else {
-      setElapsedTime(0);
-    }
-    return () => clearInterval(interval);
-  }, [isWorking, task.workingStartTime]);
-
-  const formatTime = (seconds) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    if (h > 0) return `${h}h ${m}m ${s}s`;
-    return `${m}m ${s}s`;
-  };
 
   const totalMinutes = task.totalTimeSpent || 0;
 
@@ -56,8 +28,7 @@ const TaskCard = ({ task, onEdit, onDelete, onWorkToggle, onResetTimer }) => {
       style={style}
       className={`
         glass-panel p-4 mb-3 rounded-xl relative group
-        ${isWorking ? 'border-neon-green shadow-[0_0_15px_rgba(0,255,157,0.2)]' : 'border-white/5'}
-        ${isFinished ? 'opacity-75' : ''}
+        ${isFinished ? 'opacity-75' : 'border-white/5'}
         hover:border-neon-green/50 transition-all duration-300
       `}
     >
@@ -126,31 +97,12 @@ const TaskCard = ({ task, onEdit, onDelete, onWorkToggle, onResetTimer }) => {
         </div>
 
         <div className="flex gap-2 items-center">
-          {isWorking && (
-            <span className="text-neon-green font-mono font-bold animate-pulse mr-2">
-              {formatTime(elapsedTime)}
-            </span>
-          )}
-
-          {isWorking && (
-            <button
-              onClick={() => onResetTimer(task)}
-              className="text-gray-500 hover:text-white mr-2"
-              title="Reset Timer"
-            >
-              ↺
-            </button>
-          )}
-
           {!isFinished && (
             <button
-              onClick={() => onWorkToggle(task)}
-              className={`px-3 py-1 rounded-md transition-colors ${isWorking
-                ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
-                : 'bg-neon-green/10 text-neon-green hover:bg-neon-green/20'
-                }`}
+              onClick={() => onLogWork(task)}
+              className="px-3 py-1 rounded-md bg-neon-green/10 text-neon-green hover:bg-neon-green/20 transition-colors mr-2"
             >
-              {isWorking ? 'Pause' : 'Start'}
+              Log
             </button>
           )}
           <button
