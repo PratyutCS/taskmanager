@@ -37,6 +37,27 @@ const CalendarView = ({ tasks }) => {
             };
         });
 
+    const CustomEvent = ({ event, view }) => {
+        const isFinished = event.resource.status === 'finished';
+        const isMonth = view === 'month';
+
+        return (
+            <div className={`w-full rounded-lg border-l-4 transition-all ${isFinished
+                ? 'bg-blue-900/40 border-neon-blue'
+                : 'bg-green-900/40 border-neon-green'
+                } ${isMonth ? 'p-1 h-auto mb-1' : 'p-2 h-full'}`}>
+                <div className={`font-bold text-gray-100 ${isMonth ? 'text-xs truncate' : 'text-sm'}`}>
+                    {event.title}
+                </div>
+                {!isMonth && (
+                    <div className="text-xs text-gray-400 mt-1">
+                        {isFinished ? 'Completed' : 'In Progress'}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const eventStyleGetter = (event) => {
         const isFinished = event.resource.status === 'finished';
         const isWorking = event.resource.status === 'working';
@@ -65,8 +86,14 @@ const CalendarView = ({ tasks }) => {
         };
     };
 
+    const [date, setDate] = React.useState(new Date());
+    const [view, setView] = React.useState('month');
+
+    const onNavigate = (newDate) => setDate(newDate);
+    const onView = (newView) => setView(newView);
+
     return (
-        <div className="h-[600px] p-4 glass-panel rounded-2xl flex flex-col">
+        <div className="h-[600px] p-4 glass-panel rounded-2xl flex flex-col relative z-10">
             <div className="flex justify-end mb-4 gap-2">
                 <button
                     onClick={() => setViewMode('pending')}
@@ -89,9 +116,15 @@ const CalendarView = ({ tasks }) => {
                     startAccessor="start"
                     endAccessor="end"
                     style={{ height: '100%' }}
-                    eventPropGetter={eventStyleGetter}
-                    views={['month', 'week', 'day']}
-                    defaultView="month"
+                    eventPropGetter={() => ({ style: { backgroundColor: 'transparent', border: 'none' } })}
+                    components={{
+                        event: (props) => <CustomEvent {...props} view={view} />
+                    }}
+                    views={['month', 'day']}
+                    view={view}
+                    date={date}
+                    onNavigate={onNavigate}
+                    onView={onView}
                     className="text-gray-300"
                 />
             </div>
