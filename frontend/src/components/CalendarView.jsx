@@ -87,7 +87,7 @@ const CalendarView = ({ tasks }) => {
     };
 
     const [date, setDate] = React.useState(new Date());
-    const [view, setView] = React.useState('month');
+    const [view, setView] = React.useState('day');
 
     const onNavigate = (newDate) => setDate(newDate);
     const onView = (newView) => setView(newView);
@@ -120,12 +120,13 @@ const CalendarView = ({ tasks }) => {
                     components={{
                         event: (props) => <CustomEvent {...props} view={view} />
                     }}
-                    views={['month', 'day']}
+                    views={['day']}
                     view={view}
                     date={date}
                     onNavigate={onNavigate}
                     onView={onView}
                     className="text-gray-300"
+                    toolbar={true}
                 />
             </div>
         </div>

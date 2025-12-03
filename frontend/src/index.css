@@ -122,11 +122,25 @@ body {
 }
 
 .rbc-toolbar button:hover,
+.rbc-toolbar button:active,
 .rbc-toolbar button.rbc-active {
   background-color: var(--color-neon-green) !important;
   color: var(--color-dark-bg) !important;
   font-weight: bold;
   box-shadow: 0 0 15px var(--color-neon-green);
+}
+
+.rbc-toolbar button:focus {
+  background-color: transparent !important;
+  color: #e0e0e0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.rbc-toolbar button:focus:hover {
+  background-color: var(--color-neon-green) !important;
+  color: var(--color-dark-bg) !important;
+  box-shadow: 0 0 15px var(--color-neon-green) !important;
 }
 
 .rbc-off-range-bg {
